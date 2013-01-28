@@ -1103,7 +1103,7 @@ the specific language governing permissions and limitations under the Apache Lic
 
         // abstract
         highlight: function (index) {
-            var choices = this.results.find(".select2-result:visible");
+            var data, choices = this.results.find(".select2-result:visible");
 
             if (arguments.length === 0) {
                 return indexOf(choices.filter(".select2-highlighted")[0], choices.get());
@@ -1117,6 +1117,10 @@ the specific language governing permissions and limitations under the Apache Lic
             $(choices[index]).addClass("select2-highlighted");
             this.ensureHighlightVisible();
 
+            data = $(choices[index]).data("select2-data");
+            if (data) {
+              this.opts.element.trigger({ type: "highlight", val: this.id(data) });
+            }
         },
 
         // abstract
