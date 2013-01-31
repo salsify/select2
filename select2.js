@@ -150,6 +150,25 @@ the specific language governing permissions and limitations under the Apache Lic
         });
     }
 
+
+    $(window).bind("resize", function(e) {
+        var dropdown=$("#select2-drop");
+        if (dropdown.length>0) {
+            // there is an open dropdown
+
+            // adjust dropdown positioning so it sizes with the content
+            dropdown.data("select2").positionDropdown();
+        }
+    }).delegate("*", "scroll", function(e) {
+        var dropdown=$("#select2-drop");
+        if (dropdown.length>0) {
+            // there is an open dropdown
+
+            // adjust dropdown positioning so it scrolls with the content
+            dropdown.data("select2").positionDropdown();
+        }
+    });
+
     $document.bind("mousemove", function (e) {
         lastMousePosition = {x: e.pageX, y: e.pageY};
     });
@@ -236,6 +255,7 @@ the specific language governing permissions and limitations under the Apache Lic
 	            textTransform: style.textTransform,
 	            whiteSpace: "nowrap"
 	        });
+            sizer.attr("class","select2-sizer");
         	$("body").append(sizer);
         }
         sizer.text(e.val());
@@ -968,31 +988,7 @@ the specific language governing permissions and limitations under the Apache Lic
          */
         // abstract
         opening: function() {
-            var cid = this.containerId, selector = this.containerSelector,
-                scroll = "scroll." + cid, resize = "resize." + cid;
-
-            this.container.parents().each(function() {
-                $(this).bind(scroll, function() {
-                    var s2 = $(selector);
-                    if (s2.length == 0) {
-                        $(this).unbind(scroll);
-                    }
-                    s2.select2("close");
-                });
-            });
-
-            window.setTimeout(function() {
-                // this is done inside a timeout because IE will sometimes fire a resize event while opening
-                // the dropdown and that causes this handler to immediately close it. this way the dropdown
-                // has a chance to fully open before we start listening to resize events
-                $(window).bind(resize, function() {
-                    var s2 = $(selector);
-                    if (s2.length == 0) {
-                        $(window).unbind(resize);
-                    }
-                    s2.select2("close");
-                })
-            }, 10);
+            var cid = this.containerId, selector = this.containerSelector;
 
             this.clearDropdownAlignmentPreference();
 
@@ -1006,13 +1002,16 @@ the specific language governing permissions and limitations under the Apache Lic
                 this.dropdown.detach().appendTo(this.body());
             }
 
+            // move the global id to the correct dropdown
+            $("#select2-drop").removeAttr("id");
+            this.dropdown.attr("id", "select2-drop");
+
+            // show the elements
             this.dropdown.show();
-
             this.positionDropdown();
+
             this.dropdown.addClass("select2-drop-active");
-
             this.ensureHighlightVisible();
-
             this.focusSearch();
         },
 
@@ -1022,13 +1021,9 @@ the specific language governing permissions and limitations under the Apache Lic
 
             var self = this;
 
-            this.container.parents().each(function() {
-                $(this).unbind("scroll." + self.containerId);
-            });
-            $(window).unbind("resize." + this.containerId);
-
             this.clearDropdownAlignmentPreference();
 
+            this.dropdown.removeAttr("id"); // only the active dropdown has the select2-drop id
             this.dropdown.hide();
             this.container.removeClass("select2-dropdown-open").removeClass("select2-container-active");
             this.results.empty();
@@ -1229,7 +1224,7 @@ the specific language governing permissions and limitations under the Apache Lic
                 }
                 return;
             }
-            else if (opts.formatSearching()) {
+            else if (opts.formatSearching() && initial===true) {
                 render("<li class='select2-searching'>" + opts.formatSearching() + "</li>");
             }
 
@@ -2180,6 +2175,12 @@ the specific language governing permissions and limitations under the Apache Lic
 
             data = selected.data("select2-data");
 
+            if (!data) {
+                // prevent a race condition when the 'x' is clicked really fast repeatedly the event can be queued
+                // and invoked on an element already removed
+                return;
+            }
+
             index = indexOf(this.id(data), val);
 
             if (index >= 0) {
@@ -2472,8 +2473,6 @@ the specific language governing permissions and limitations under the Apache Lic
             return String(markup).replace(/[&<>"'/\\]/g, function (match) {
                     return replace_map[match[0]];
             });
-
-            return markup;
         },
         blurOnChange: false,
         selectOnBlur: false
