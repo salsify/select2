@@ -414,6 +414,7 @@ the specific language governing permissions and limitations under the Apache Lic
             self = this;
 
         return function (query) {
+            var waitTime = query && query.term && query.term.length ? Math.max(200, 1000 - (query.term.length * 250)) : 0;
             window.clearTimeout(timeout);
             timeout = window.setTimeout(function () {
                 var data = options.data, // ajax data function
@@ -447,12 +448,13 @@ the specific language governing permissions and limitations under the Apache Lic
                     data: data,
                     success: function (data) {
                         // TODO - replace query.page with query so users have access to term, page, etc.
-                        var results = options.results(data, query.page);
+                        // *** SALSIFY - changed from 08dc4d3768afbfb7d2f8f4d13e726b7de99feed9 - added 3rd 'query' argument
+                        var results = options.results(data, query.page, query);
                         query.callback(results);
                     }
                 });
                 handler = transport.call(self, params);
-            }, quietMillis);
+            }, waitTime);
         };
     }
 
@@ -2201,8 +2203,9 @@ the specific language governing permissions and limitations under the Apache Lic
 
             this.close();
 
-            if (!options || !options.noFocus)
-                this.selection.focus();
+            // ** Salsify ***
+            // if (!options || !options.noFocus)
+            //     this.selection.focus();
 
             if (!equal(old, this.id(data))) { this.triggerChange({added:data,removed:oldData}); }
         },
@@ -2745,8 +2748,9 @@ the specific language governing permissions and limitations under the Apache Lic
             // added we do not need to check if this is a new element before firing change
             this.triggerChange({ added: data });
 
-            if (!options || !options.noFocus)
-                this.focusSearch();
+            // ** Salsify ***
+            // if (!options || !options.noFocus)
+            //     this.focusSearch();
         },
 
         // multi
